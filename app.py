@@ -89,7 +89,7 @@ class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("QR Generator")
-        self.settings = QSettings("Alemazz99", "qrcode_generator")
+        self.settings = QSettings("qrcode_generator", "settings")
         self.current_image = None
         self.logo_path: str | None = None
 

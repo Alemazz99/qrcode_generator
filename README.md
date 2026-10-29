@@ -160,9 +160,9 @@ soprattutto con colori chiari su sfondo chiaro o con sfondo trasparente.
 Colori, stili, ultimo logo e cartella di salvataggio vengono ricordati tramite
 `QSettings` di Qt:
 
-- **Linux**: `~/.config/your-username/qrcode_generator.conf`
-- **Windows**: registro, in `HKEY_CURRENT_USER\Software\your-username\qrcode_generator`
-- **macOS**: `~/Library/Preferences/com.your-username.qrcode_generator.plist`
+- **Linux**: `~/.config/qrcode_generator/settings.conf`
+- **Windows**: registro, in `HKEY_CURRENT_USER\Software\qrcode_generator\settings`
+- **macOS**: `~/Library/Preferences/com.qrcode_generator.settings.plist`
 
 Cancellare quel file (o premere **Ripristina predefiniti**) riporta tutto ai valori iniziali.
 
