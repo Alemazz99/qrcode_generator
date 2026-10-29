@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>QR Generator</title>
+  <meta name="description" content="Genera QR code personalizzati con colori, stile e logo centrale. Tutto nel browser, anche offline.">
+  <meta name="theme-color" content="#f6f7f9" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#0f1115" media="(prefers-color-scheme: dark)">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="QR Generator">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icons/icon-192.png" type="image/png">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <link rel="stylesheet" href="style.css">
+  <script src="vendor/qrcode.js" defer></script>
+  <script src="qr-render.js" defer></script>
+  <script src="app.js" defer></script>
+</head>
+<body>
+  <header class="topbar">
+    <img src="icons/icon-192.png" alt="" width="32" height="32">
+    <h1>QR Generator</h1>
+  </header>
+
+  <main class="layout">
+    <section class="output" aria-label="Anteprima">
+      <div class="field">
+        <label for="data">Link o testo</label>
+        <input id="data" type="text" inputmode="url" placeholder="https://esempio.it"
+               autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false">
+      </div>
+
+      <div id="preview" class="preview">
+        <p class="placeholder">Inserisci un link per vedere l'anteprima</p>
+      </div>
+      <p id="info" class="info"></p>
+
+      <div class="actions">
+        <button id="download" class="btn primary" type="button" disabled>Scarica PNG</button>
+        <button id="share" class="btn" type="button" hidden disabled>Condividi</button>
+      </div>
+    </section>
+
+    <section class="controls" aria-label="Impostazioni">
+      <fieldset class="card">
+        <legend>Aspetto</legend>
+        <div class="row">
+          <label for="fg">Colore QR</label>
+          <div class="color">
+            <input id="fg" type="color" aria-label="Colore QR">
+            <input id="fg-hex" type="text" maxlength="7" spellcheck="false" aria-label="Colore QR esadecimale">
+          </div>
+        </div>
+        <div class="row">
+          <label for="bg">Sfondo</label>
+          <div class="color">
+            <input id="bg" type="color" aria-label="Colore sfondo">
+            <input id="bg-hex" type="text" maxlength="7" spellcheck="false" aria-label="Colore sfondo esadecimale">
+          </div>
+        </div>
+        <div class="row">
+          <span></span>
+          <label class="check"><input id="transparent" type="checkbox"> Sfondo trasparente</label>
+        </div>
+        <div class="row">
+          <label for="module-style">Stile moduli</label>
+          <select id="module-style"></select>
+        </div>
+        <div class="row">
+          <label for="eye-style">Stile angoli</label>
+          <select id="eye-style"></select>
+        </div>
+      </fieldset>
+
+      <fieldset class="card">
+        <legend>Logo centrale</legend>
+        <div class="row">
+          <span class="label">File</span>
+          <div class="logo-file">
+            <span id="logo-name" class="muted">Nessun logo</span>
+            <label class="btn small" for="logo-input">Scegli…</label>
+            <input id="logo-input" type="file" accept="image/*" hidden>
+            <button id="logo-clear" class="btn small" type="button" disabled>Rimuovi</button>
+          </div>
+        </div>
+        <div class="row">
+          <label for="logo-ratio">Dimensione</label>
+          <div class="range">
+            <input id="logo-ratio" type="range" min="10" step="1">
+            <output id="logo-ratio-value" for="logo-ratio"></output>
+          </div>
+        </div>
+        <div class="row">
+          <span></span>
+          <label class="check"><input id="logo-padding" type="checkbox"> Riquadro di sfondo dietro al logo</label>
+        </div>
+      </fieldset>
+
+      <fieldset class="card">
+        <legend>Dimensioni e qualità</legend>
+        <div class="row">
+          <label for="box-size">Dimensione modulo</label>
+          <div class="range">
+            <input id="box-size" type="range" min="4" max="80" step="1">
+            <output id="box-size-value" for="box-size"></output>
+          </div>
+        </div>
+        <div class="row">
+          <label for="border">Margine</label>
+          <div class="range">
+            <input id="border" type="range" min="0" max="10" step="1">
+            <output id="border-value" for="border"></output>
+          </div>
+        </div>
+        <div class="row">
+          <label for="error-level">Correzione errori</label>
+          <select id="error-level"></select>
+        </div>
+        <p id="error-note" class="note" hidden>Con il logo viene usato H - 30%</p>
+      </fieldset>
+
+      <button id="reset" class="btn ghost" type="button" disabled>Ripristina predefiniti</button>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <p>Il QR viene creato sul tuo dispositivo: link e logo non vengono inviati da nessuna parte.</p>
+    <p><a href="https://github.com/Alemazz99/qrcode_generator">Codice sorgente su GitHub</a> · Licenza MIT</p>
+  </footer>
+
+  <div id="status" class="toast" role="status" aria-live="polite"></div>
+</body>
+</html>

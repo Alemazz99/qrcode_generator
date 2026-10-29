@@ -41,6 +41,23 @@ scrivi, e ricorda le tue impostazioni per la volta successiva.
 - **Impostazioni ricordate** tra un avvio e l'altro, con il pulsante **Ripristina predefiniti** per tornare ai valori iniziali
 - Nome file proposto in automatico dal dominio (es. `qr_github.com.png`)
 
+## Versione web (anche da telefono)
+
+👉 **[alemazz99.github.io/qrcode_generator](https://alemazz99.github.io/qrcode_generator/)**
+
+La stessa app, con le stesse opzioni e gli stessi limiti di leggibilità, gira
+direttamente nel browser: niente da installare, funziona su telefono, tablet e PC.
+Il QR viene generato sul dispositivo, quindi link e logo non vengono inviati a nessun server.
+
+Per averla come un'app sul telefono, aprila e aggiungila alla schermata Home:
+
+- **Android (Chrome)**: menu <kbd>⋮</kbd> → *Aggiungi a schermata Home* (o *Installa app*)
+- **iPhone (Safari)**: pulsante *Condividi* → *Aggiungi alla schermata Home*
+
+Da lì si apre a schermo intero e funziona anche **offline**. Sul telefono il
+pulsante **Condividi** permette di salvare il QR direttamente nelle foto o di
+mandarlo in chat.
+
 ## Requisiti
 
 - Python **3.10** o superiore
@@ -153,7 +170,9 @@ opzioni hanno dei limiti voluti, verificati decodificando centinaia di varianti 
   tagliato a metà.
 
 Consiglio comunque di provare sempre il QR con un telefono prima di stamparlo,
-soprattutto con colori chiari su sfondo chiaro o con sfondo trasparente.
+soprattutto con colori chiari su sfondo chiaro, con sfondo trasparente o con
+**link lunghi insieme a un logo**: più il link è lungo, più il QR è fitto e più
+conviene tenere il logo piccolo (o usare un link accorciato).
 
 ## Dove vengono salvate le impostazioni
 
@@ -166,18 +185,41 @@ Colori, stili, ultimo logo e cartella di salvataggio vengono ricordati tramite
 
 Cancellare quel file (o premere **Ripristina predefiniti**) riporta tutto ai valori iniziali.
 
+Nella versione web le preferenze (e il logo) restano solo nel browser del
+dispositivo, nel `localStorage` della pagina.
+
 ## Struttura del progetto
 
 ```
 qrcode_generator/
-├── app.py                # Interfaccia grafica (PySide6)
+├── app.py                # Interfaccia grafica desktop (PySide6)
 ├── qr_core.py            # Generazione del QR, indipendente dalla UI
 ├── run.sh                # Avvio: crea il venv al primo lancio, usa distrobox se presente
 ├── install-launcher.sh   # Aggiunge l'app al menu applicazioni (Linux)
 ├── requirements.txt
-└── assets/
-    ├── icon.png
-    └── screenshot.png
+├── assets/
+│   ├── icon.png
+│   └── screenshot.png
+└── docs/                 # Versione web, pubblicata con GitHub Pages
+    ├── index.html
+    ├── app.js            # Interfaccia web
+    ├── qr-render.js      # Generazione del QR su canvas: stessa logica di qr_core.py
+    ├── sw.js             # Service worker per l'uso offline
+    ├── manifest.webmanifest
+    ├── style.css
+    ├── icons/
+    └── vendor/qrcode.js  # qrcode-generator di Kazuhiko Arase (MIT)
+```
+
+Se modifichi le regole di generazione (stili, limiti, valori predefiniti), tieni
+allineati `qr_core.py` e `docs/qr-render.js`, così app desktop e versione web
+producono lo stesso risultato.
+
+Per provare la versione web in locale serve un piccolo server (il service worker
+non funziona aprendo il file direttamente):
+
+```bash
+python3 -m http.server -d docs 8000   # poi apri http://localhost:8000
 ```
 
 ## Risoluzione problemi
