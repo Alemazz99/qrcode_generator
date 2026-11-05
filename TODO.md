@@ -50,6 +50,66 @@ e te ne accorgi solo quando qualcuno lo scansiona.
 
 ---
 
+## QR dinamici funzionanti anche a servizio spento
+
+**Idea**: un QR dinamico oggi funziona solo se il servizio Go risponde. L'obiettivo
+è che continui a funzionare anche con il servizio spento, addormentato o in crash,
+restando indipendenti da un singolo provider.
+
+**Il limite fisico**: al momento della scansione *qualcosa* deve rispondere
+all'URL scritto nel QR, perché la destinazione attuale deve stare da qualche parte.
+Senza niente di acceso da nessuna parte è impossibile, per qualsiasi soluzione.
+Si può però ridurre la parte che deve restare online a qualcosa di minimo,
+standard e intercambiabile.
+
+**Regola d'oro, valida per qualunque soluzione**: nei QR va sempre un dominio
+nostro (es. `q.fearlix.com`), mai `*.onrender.com` o `*.supabase.co`. Così si
+cambia provider spostando solo il DNS, senza ristampare nulla.
+
+### Soluzione proposta: "pubblicazione statica"
+- Il servizio Go (in locale o online) gestisce i QR come oggi e, con un comando
+  **Pubblica**, genera i redirect come file statici e li carica online.
+- Online resta solo qualcosa di "stupido" che serve quei file:
+  - **nginx/Caddy su un nostro server**: 302 veri, e i **log degli accessi**
+    permettono di recuperare tutte le scansioni importandole in seguito (scartando
+    l'IP);
+  - **oppure un hosting statico** (Render Static Site, Netlify, GitHub Pages):
+    redirect tramite una pagina HTML/JS invece del 302, e nessun log.
+- Cambio di destinazione = modifica + ripubblicazione. Il disegno resta identico.
+- Variante gratuita con Render + Supabase: redirect su Render Static Site; la
+  pagina segnala la scansione a Supabase con una chiave pubblica che può solo
+  inserire nella tabella delle scansioni; il servizio Go importa poi le scansioni.
+  Se Supabase va in pausa i redirect continuano a funzionare, si perdono solo le
+  statistiche di quel periodo.
+
+### Compromessi
+| Aspetto | Servizio sempre acceso (oggi) | Pubblicazione statica |
+|---|---|---|
+| QR funzionanti col servizio spento | ❌ | ✅ |
+| Cambio di destinazione | immediato | alla ripubblicazione (secondi o un paio di minuti) |
+| Statistiche | in tempo reale | importate dopo, dai log o da Supabase |
+| Login esposto su internet | sì | no, se la dashboard resta solo in locale |
+| Più utenti online | ✅ | solo se la dashboard resta comunque online |
+
+Rischi della variante con Supabase: la chiave pubblica permette di **gonfiare le
+statistiche** con scansioni false (rischio sulla qualità dei numeri, non sulla
+sicurezza), e il redirect HTML aggiunge qualche centinaio di millisecondi.
+
+### Scartate
+- **Edge di terzi (Cloudflare Worker + KV)**: robustissimo ma lega a Cloudflare,
+  e l'obiettivo è restare indipendenti.
+- **Cache del CDN "servi la copia vecchia se il server non risponde"**: non
+  copre i QR mai scansionati prima e perde le scansioni durante il fermo.
+- **Due server con database replicato**: molto più da gestire, per un risultato
+  inferiore.
+
+### Punti aperti
+- [ ] Dove far girare la parte statica: nginx/Caddy su un nostro server o un hosting statico?
+- [ ] Dashboard solo in locale o anche online per gli altri utenti?
+- [ ] Verificare che i Render Static Site non si addormentino e come gestiscono gli header di cache.
+
+---
+
 ## `BASE_URL` visibile nella dashboard
 
 Mostrare all'admin, in sola lettura, il dominio usato per i link corti, con
