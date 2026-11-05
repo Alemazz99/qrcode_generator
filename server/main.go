@@ -9,6 +9,7 @@ import (
 	"log/slog"
 	"net"
 	"net/http"
+	"net/url"
 	"os"
 	"os/signal"
 	"syscall"
@@ -35,9 +36,9 @@ func run(log *slog.Logger) error {
 	if err != nil {
 		return err
 	}
-	st, err := store.Open(cfg.DBPath)
+	st, dbName, err := openStore(cfg)
 	if err != nil {
-		return fmt.Errorf("database %s: %w", cfg.DBPath, err)
+		return fmt.Errorf("database %s: %w", dbName, err)
 	}
 	defer st.Close()
 
@@ -65,7 +66,7 @@ func run(log *slog.Logger) error {
 	}
 	errc := make(chan error, 1)
 	go func() { errc <- srv.Serve(ln) }()
-	log.Info("servizio avviato", "addr", cfg.Addr, "base_url", cfg.BaseURL, "dashboard", cfg.BaseURL+"/app/", "qr_statici", cfg.BaseURL+"/crea/", "db", cfg.DBPath)
+	log.Info("servizio avviato", "addr", cfg.Addr, "base_url", cfg.BaseURL, "dashboard", cfg.BaseURL+"/app/", "qr_statici", cfg.BaseURL+"/crea/", "db", dbName)
 
 	select {
 	case err := <-errc:
@@ -79,6 +80,21 @@ func run(log *slog.Logger) error {
 		return err
 	}
 	return nil
+}
+
+// openStore usa Postgres se c'è DATABASE_URL, altrimenti il file SQLite.
+// dbName è una descrizione del database da mostrare nei log, senza credenziali.
+func openStore(cfg config.Config) (*store.Store, string, error) {
+	if cfg.DatabaseURL == "" {
+		st, err := store.Open(cfg.DBPath)
+		return st, cfg.DBPath, err
+	}
+	name := "Postgres"
+	if u, err := url.Parse(cfg.DatabaseURL); err == nil {
+		name = "Postgres " + u.Host + u.Path
+	}
+	st, err := store.OpenPostgres(cfg.DatabaseURL)
+	return st, name, err
 }
 
 // bootstrapAdmin crea il primo amministratore quando il database è vuoto.

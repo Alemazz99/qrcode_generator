@@ -18,7 +18,9 @@ type Config struct {
 	Addr string
 	// URL pubblico del servizio, senza "/" finale: finisce dentro ogni QR dinamico
 	BaseURL string
-	DBPath  string
+	// Se impostato (postgres://…) si usa Postgres, altrimenti SQLite in DBPath
+	DatabaseURL string
+	DBPath      string
 	// Usati solo al primo avvio, quando non esiste ancora nessun utente
 	AdminUsername string
 	AdminPassword string
@@ -39,6 +41,7 @@ func Load() (Config, error) {
 	cfg := Config{
 		Addr:          ":" + env("PORT", "8080"),
 		BaseURL:       strings.TrimRight(env("BASE_URL", "http://localhost:8080"), "/"),
+		DatabaseURL:   os.Getenv("DATABASE_URL"),
 		DBPath:        env("DB_PATH", "data/qr.db"),
 		AdminUsername: os.Getenv("ADMIN_USERNAME"),
 		AdminPassword: os.Getenv("ADMIN_PASSWORD"),
@@ -53,6 +56,11 @@ func Load() (Config, error) {
 		return Config{}, fmt.Errorf("BASE_URL deve essere solo schema e dominio, senza percorso: %q", cfg.BaseURL)
 	}
 	cfg.SecureCookies = u.Scheme == "https"
+
+	if cfg.DatabaseURL != "" && !strings.HasPrefix(cfg.DatabaseURL, "postgres://") &&
+		!strings.HasPrefix(cfg.DatabaseURL, "postgresql://") {
+		return Config{}, errors.New("DATABASE_URL deve iniziare con postgres:// (lascialo vuoto per usare SQLite)")
+	}
 
 	cfg.Location, err = time.LoadLocation(env("TIMEZONE", "Europe/Rome"))
 	if err != nil {

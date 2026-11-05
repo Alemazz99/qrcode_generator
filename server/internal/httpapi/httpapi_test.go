@@ -3,12 +3,14 @@ package httpapi
 import (
 	"bytes"
 	"context"
+	"database/sql"
 	"encoding/json"
 	"io"
 	"log/slog"
 	"net/http"
 	"net/http/cookiejar"
 	"net/http/httptest"
+	"os"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -18,6 +20,8 @@ import (
 	"fearlix/qrcode_generator/server/internal/auth"
 	"fearlix/qrcode_generator/server/internal/config"
 	"fearlix/qrcode_generator/server/internal/store"
+
+	_ "github.com/jackc/pgx/v5/stdlib"
 )
 
 const (
@@ -35,11 +39,7 @@ type env struct {
 
 func newEnv(t *testing.T) *env {
 	t.Helper()
-	st, err := store.Open(filepath.Join(t.TempDir(), "test.db"))
-	if err != nil {
-		t.Fatal(err)
-	}
-	t.Cleanup(func() { st.Close() })
+	st := openTestStore(t)
 
 	loc, _ := time.LoadLocation("Europe/Rome")
 	cfg := config.Config{BaseURL: "http://qr.test", Location: loc}
@@ -52,6 +52,35 @@ func newEnv(t *testing.T) *env {
 	e := &env{t: t, ts: ts, st: st, srv: srv}
 	e.createUser("admin", true)
 	return e
+}
+
+// openTestStore usa SQLite in una cartella temporanea oppure, se c'è
+// TEST_DATABASE_URL, un Postgres di prova che viene svuotato prima di ogni test.
+func openTestStore(t *testing.T) *store.Store {
+	t.Helper()
+	url := os.Getenv("TEST_DATABASE_URL")
+	if url == "" {
+		st, err := store.Open(filepath.Join(t.TempDir(), "test.db"))
+		if err != nil {
+			t.Fatal(err)
+		}
+		t.Cleanup(func() { st.Close() })
+		return st
+	}
+	st, err := store.OpenPostgres(url)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { st.Close() })
+	raw, err := sql.Open("pgx", url)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer raw.Close()
+	if _, err := raw.Exec("TRUNCATE scans, target_history, qr_codes, sessions, users RESTART IDENTITY CASCADE"); err != nil {
+		t.Fatal(err)
+	}
+	return st
 }
 
 func (e *env) createUser(name string, admin bool) {

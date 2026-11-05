@@ -14,7 +14,7 @@
   <img alt="Python 3.10+" src="https://img.shields.io/badge/python-3.10%2B-3776AB?logo=python&logoColor=white">
   <img alt="PySide6" src="https://img.shields.io/badge/GUI-PySide6%20(Qt)-41CD52?logo=qt&logoColor=white">
   <img alt="Go 1.26" src="https://img.shields.io/badge/go-1.26-00ADD8?logo=go&logoColor=white">
-  <img alt="SQLite" src="https://img.shields.io/badge/db-SQLite-003B57?logo=sqlite&logoColor=white">
+  <img alt="SQLite o Postgres" src="https://img.shields.io/badge/db-SQLite%20%7C%20Postgres-336791?logo=postgresql&logoColor=white">
   <img alt="Licenza MIT" src="https://img.shields.io/badge/licenza-MIT-blue">
 </p>
 
@@ -90,7 +90,8 @@ mandarlo in chat.
 
 ## 📊 Servizio QR dinamici
 
-Un piccolo servizio Go (un solo eseguibile, database SQLite) con una dashboard web.
+Un piccolo servizio Go (un solo eseguibile) con una dashboard web. Il database è
+SQLite in locale (un file, niente da installare) o Postgres in produzione (es. Supabase).
 
 ### Cosa puoi fare
 
@@ -158,7 +159,14 @@ Per provarlo **col telefono** metti in `.env` `BASE_URL=http://<IP-del-PC>:8080`
 quelli creati in locale servono solo per le prove.
 
 Altri comandi: `make test`, `make check` (gofmt, vet, test con race detector),
-`make clean`.
+`make clean`. Per eseguire i test anche su Postgres basta indicare un database di
+prova, che viene **svuotato** a ogni test:
+
+```bash
+podman run --rm -d --name qrtest-pg -p 127.0.0.1:55432:5432 -e POSTGRES_PASSWORD=test postgres:17-alpine
+TEST_DATABASE_URL="postgres://postgres:test@127.0.0.1:55432/postgres?sslmode=disable" make test
+podman stop qrtest-pg
+```
 
 <details>
 <summary><b>Configurazione (<code>server/.env</code>)</b></summary>
@@ -167,7 +175,8 @@ Altri comandi: `make test`, `make check` (gofmt, vet, test con race detector),
 |---|---|---|
 | `PORT` | `8080` | Porta su cui ascolta il servizio |
 | `BASE_URL` | `http://localhost:8080` | URL pubblico, senza `/` finale. Finisce in ogni QR dinamico: non va più cambiato dopo averli stampati |
-| `DB_PATH` | `data/qr.db` | File del database SQLite |
+| `DATABASE_URL` | | Se impostato (`postgres://…`) usa Postgres invece di SQLite |
+| `DB_PATH` | `data/qr.db` | File del database SQLite, usato se `DATABASE_URL` è vuoto |
 | `ADMIN_USERNAME` / `ADMIN_PASSWORD` | | Primo amministratore, usato solo con database vuoto |
 | `TRUST_PROXY` | `false` | `true` se il servizio sta dietro un reverse proxy che imposta `X-Forwarded-For` |
 | `TIMEZONE` | `Europe/Rome` | Fuso orario con cui raggruppare le scansioni per giorno |
@@ -195,6 +204,26 @@ La dashboard usa queste API JSON; le richieste che modificano dati vogliono
 
 ### In produzione
 
+Due strade, a seconda di dove lo metti.
+
+**Piattaforma senza disco persistente + Supabase** (es. Koyeb, gratuito). Il file
+SQLite verrebbe cancellato a ogni riavvio, quindi si usa Postgres:
+
+1. Su Supabase crea un progetto e copia la stringa di connessione da
+   *Connect → Session pooler* (IPv4). Le tabelle le crea il servizio al primo avvio,
+   con la Row Level Security attiva, quindi non sono leggibili dalle API pubbliche
+   di Supabase.
+2. Sulla piattaforma crea un servizio da questo repository con `server/Dockerfile`
+   (contesto di build: la root del repository) e le variabili `BASE_URL`,
+   `DATABASE_URL`, `ADMIN_USERNAME`, `ADMIN_PASSWORD`, `TRUST_PROXY=true`.
+3. Collega il tuo dominio (es. `q.tuodominio.it`) e usalo in `BASE_URL`.
+4. Se la piattaforma addormenta i servizi inattivi, un monitoraggio gratuito che
+   chiama `/healthz` ogni ora lo tiene sveglio. `/healthz` interroga anche il
+   database, quindi tiene attivo anche Supabase, che mette in pausa i progetti
+   gratuiti dopo una settimana senza attività.
+
+**Server tuo con Docker** (SQLite su un volume):
+
 ```bash
 docker build -f server/Dockerfile -t qrserver .
 docker run -d --name qrserver -p 127.0.0.1:8080:8080 -v qrdata:/data \
@@ -212,8 +241,9 @@ q.esempio.it {
 
 - Con `BASE_URL` in `https` i cookie di sessione diventano automaticamente `Secure`.
 - Scegli il dominio con cura **prima** di stampare i QR, perché non si potrà più cambiare.
-- Per il backup basta copiare il file SQLite: `/data/qr.db`, con i file `-wal`/`-shm`
-  a servizio fermo, oppure a caldo con `sqlite3 qr.db ".backup copia.db"`.
+- Per il backup: con SQLite basta copiare `/data/qr.db` (con i file `-wal`/`-shm`
+  a servizio fermo, oppure a caldo con `sqlite3 qr.db ".backup copia.db"`); con
+  Postgres usa `pg_dump`.
 
 ## 🖥️ App desktop
 
@@ -379,7 +409,7 @@ qrcode_generator/
     ├── .env.example
     ├── internal/
     │   ├── config/       # Lettura di .env e variabili d'ambiente
-    │   ├── store/        # SQLite: utenti, sessioni, QR, scansioni, migrazioni
+    │   ├── store/        # SQLite o Postgres: utenti, sessioni, QR, scansioni, migrazioni
     │   ├── auth/         # Password (bcrypt), sessioni, codici, limite ai login
     │   ├── useragent/    # Dispositivo/sistema/browser e riconoscimento dei bot
     │   └── httpapi/      # Redirect, API JSON, statistiche

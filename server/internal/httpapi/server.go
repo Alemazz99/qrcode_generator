@@ -2,6 +2,7 @@
 package httpapi
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"io/fs"
@@ -54,7 +55,16 @@ func (s *Server) Handler() http.Handler {
 	mux := http.NewServeMux()
 
 	// Pubblici
+	// Controlla anche il database: utile per il monitoraggio e, con un ping
+	// periodico, tiene attivi i database gratuiti che vanno in pausa (Supabase)
 	mux.HandleFunc("GET /healthz", func(w http.ResponseWriter, r *http.Request) {
+		ctx, cancel := context.WithTimeout(r.Context(), 5*time.Second)
+		defer cancel()
+		if err := s.store.Ping(ctx); err != nil {
+			s.log.Error("healthz: database non raggiungibile", "err", err)
+			http.Error(w, "database non raggiungibile", http.StatusServiceUnavailable)
+			return
+		}
 		w.Write([]byte("ok\n"))
 	})
 	mux.HandleFunc("GET /robots.txt", func(w http.ResponseWriter, r *http.Request) {

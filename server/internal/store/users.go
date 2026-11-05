@@ -41,16 +41,16 @@ func (s *Store) CountUsers(ctx context.Context) (int, error) {
 }
 
 func (s *Store) CreateUser(ctx context.Context, username, passwordHash string, isAdmin bool, now time.Time) (User, error) {
-	res, err := s.db.ExecContext(ctx,
-		"INSERT INTO users (username, password_hash, is_admin, created_at) VALUES (?, ?, ?, ?)",
-		username, passwordHash, isAdmin, unix(now))
+	var id int64
+	err := s.db.QueryRowContext(ctx,
+		"INSERT INTO users (username, password_hash, is_admin, created_at) VALUES (?, ?, ?, ?) RETURNING id",
+		username, passwordHash, isAdmin, unix(now)).Scan(&id)
 	if isUniqueViolation(err) {
 		return User{}, ErrConflict
 	}
 	if err != nil {
 		return User{}, err
 	}
-	id, _ := res.LastInsertId()
 	return s.UserByID(ctx, id)
 }
 
@@ -59,7 +59,9 @@ func (s *Store) UserByID(ctx context.Context, id int64) (User, error) {
 }
 
 func (s *Store) UserByUsername(ctx context.Context, username string) (User, error) {
-	return scanUser(s.db.QueryRowContext(ctx, "SELECT "+userColumns+" FROM users WHERE username = ?", username))
+	// lower() su entrambi i lati: su Postgres il confronto tra testi distingue le maiuscole
+	return scanUser(s.db.QueryRowContext(ctx,
+		"SELECT "+userColumns+" FROM users WHERE lower(username) = lower(?)", username))
 }
 
 func (s *Store) ListUsers(ctx context.Context) ([]User, error) {
@@ -94,7 +96,7 @@ type UserPatch struct {
 }
 
 func (s *Store) UpdateUser(ctx context.Context, id int64, p UserPatch) (User, error) {
-	err := s.tx(ctx, func(tx *sql.Tx) error {
+	err := s.tx(ctx, func(tx *tx) error {
 		var exists int
 		if err := tx.QueryRowContext(ctx, "SELECT 1 FROM users WHERE id = ?", id).Scan(&exists); err != nil {
 			if errors.Is(err, sql.ErrNoRows) {

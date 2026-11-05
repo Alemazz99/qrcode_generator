@@ -89,17 +89,17 @@ func (s *Store) CreateQR(ctx context.Context, n NewQR, newCode func() (string, e
 		if err != nil {
 			return QR{}, err
 		}
-		res, err := s.db.ExecContext(ctx, `
+		var id int64
+		err = s.db.QueryRowContext(ctx, `
 			INSERT INTO qr_codes (user_id, code, kind, name, target_url, style_json, logo, logo_name, created_at, updated_at)
-			VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-			n.UserID, code, n.Kind, n.Name, n.TargetURL, n.StyleJSON, logo, n.LogoName, unix(now), unix(now))
+			VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id`,
+			n.UserID, code, n.Kind, n.Name, n.TargetURL, n.StyleJSON, logo, n.LogoName, unix(now), unix(now)).Scan(&id)
 		if isUniqueViolation(err) {
 			continue
 		}
 		if err != nil {
 			return QR{}, err
 		}
-		id, _ := res.LastInsertId()
 		return s.GetQR(ctx, n.UserID, id)
 	}
 	return QR{}, fmt.Errorf("impossibile generare un codice libero")
@@ -161,7 +161,7 @@ type QRPatch struct {
 
 // UpdateQR modifica un QR dell'utente; se cambia la destinazione la registra nello storico.
 func (s *Store) UpdateQR(ctx context.Context, userID, id int64, p QRPatch, now time.Time) (QR, error) {
-	err := s.tx(ctx, func(tx *sql.Tx) error {
+	err := s.tx(ctx, func(tx *tx) error {
 		var oldTarget string
 		err := tx.QueryRowContext(ctx,
 			"SELECT target_url FROM qr_codes WHERE id = ? AND user_id = ? AND deleted_at IS NULL",
