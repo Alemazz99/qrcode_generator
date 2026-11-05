@@ -472,6 +472,7 @@ func TestDashboardRoutes(t *testing.T) {
 		t.Fatalf("/crea → %d %s", res.StatusCode, res.Header.Get("Location"))
 	}
 	expectStatus(t, e.do(c, "GET", "/healthz", nil), http.StatusOK)
+	expectStatus(t, e.do(c, "GET", "/health", nil), http.StatusOK)
 	expectStatus(t, e.do(c, "GET", "/api/nope", nil), http.StatusNotFound)
 }
 

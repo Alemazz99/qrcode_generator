@@ -57,16 +57,10 @@ func (s *Server) Handler() http.Handler {
 	// Pubblici
 	// Controlla anche il database: utile per il monitoraggio e, con un ping
 	// periodico, tiene attivi i database gratuiti che vanno in pausa (Supabase)
-	mux.HandleFunc("GET /healthz", func(w http.ResponseWriter, r *http.Request) {
-		ctx, cancel := context.WithTimeout(r.Context(), 5*time.Second)
-		defer cancel()
-		if err := s.store.Ping(ctx); err != nil {
-			s.log.Error("healthz: database non raggiungibile", "err", err)
-			http.Error(w, "database non raggiungibile", http.StatusServiceUnavailable)
-			return
-		}
-		w.Write([]byte("ok\n"))
-	})
+	// /health e /healthz fanno la stessa cosa: su Google Cloud Run i percorsi che
+	// finiscono in z possono essere intercettati dalla piattaforma, quindi lì si usa /health
+	mux.HandleFunc("GET /health", s.handleHealth)
+	mux.HandleFunc("GET /healthz", s.handleHealth)
 	mux.HandleFunc("GET /robots.txt", func(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte("User-agent: *\nDisallow: /\n"))
 	})
@@ -107,6 +101,17 @@ func (s *Server) Handler() http.Handler {
 	})
 
 	return securityHeaders(mux)
+}
+
+func (s *Server) handleHealth(w http.ResponseWriter, r *http.Request) {
+	ctx, cancel := context.WithTimeout(r.Context(), 5*time.Second)
+	defer cancel()
+	if err := s.store.Ping(ctx); err != nil {
+		s.log.Error("health: database non raggiungibile", "err", err)
+		http.Error(w, "database non raggiungibile", http.StatusServiceUnavailable)
+		return
+	}
+	w.Write([]byte("ok\n"))
 }
 
 func redirectTo(path string) http.HandlerFunc {

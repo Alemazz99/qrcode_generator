@@ -1,5 +1,7 @@
-# Build dalla root della repo (serve docs/ per il renderer):
-#   docker build -f server/Dockerfile -t qrserver .
+# Immagine del servizio dei QR dinamici (server/). Sta nella root della repo
+# perché il build ha bisogno sia di server/ sia di docs/ (generatore su /crea/),
+# e così le piattaforme che costruiscono dal repository lo trovano senza configurazione:
+#   docker build -t qrserver .
 FROM golang:1.26-alpine AS build
 WORKDIR /src/server
 
@@ -19,5 +21,5 @@ USER app
 ENV PORT=8080 DB_PATH=/data/qr.db
 VOLUME /data
 EXPOSE 8080
-HEALTHCHECK --interval=30s --timeout=3s CMD wget -qO- http://127.0.0.1:${PORT}/healthz || exit 1
+HEALTHCHECK --interval=30s --timeout=3s CMD wget -qO- http://127.0.0.1:${PORT}/health || exit 1
 CMD ["qrserver"]

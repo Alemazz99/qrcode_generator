@@ -80,7 +80,21 @@ const codeAlphabet = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuv
 var codeRe = regexp.MustCompile(`^[0-9A-Za-z]{` + fmt.Sprint(CodeLength) + `}$`)
 
 // NewCode genera un codice casuale base62 (62^6 ≈ 57 miliardi di combinazioni).
+// L'ultimo carattere non è mai "z" o "Z": Google Cloud Run riserva alcuni
+// percorsi che finiscono in z (come /healthz) e consiglia di evitarli tutti.
 func NewCode() (string, error) {
+	for {
+		code, err := randomCode()
+		if err != nil {
+			return "", err
+		}
+		if last := code[len(code)-1]; last != 'z' && last != 'Z' {
+			return code, nil
+		}
+	}
+}
+
+func randomCode() (string, error) {
 	b := make([]byte, CodeLength)
 	for i := range b {
 		// Rifiuta i byte >= 248 (= 4*62) per non favorire i primi caratteri

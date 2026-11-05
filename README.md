@@ -147,7 +147,7 @@ make run                             # dalla root della repo
 | <http://localhost:8080/app/> | Dashboard (accedi con `ADMIN_USERNAME` / `ADMIN_PASSWORD`) |
 | <http://localhost:8080/crea/> | Generatore di QR statici, senza accesso |
 | `http://localhost:8080/<codice>` | Link corto di un QR dinamico: conta la scansione e fa il redirect |
-| <http://localhost:8080/healthz> | Risponde `ok` se il servizio è attivo |
+| <http://localhost:8080/health> | Risponde `ok` se servizio e database sono attivi (anche `/healthz`) |
 
 Le credenziali admin del `.env` vengono usate **solo al primo avvio**, quando il
 database (`server/data/qr.db`) è vuoto. Dopo, la password si cambia dalla
@@ -213,19 +213,19 @@ SQLite verrebbe cancellato a ogni riavvio, quindi si usa Postgres:
    *Connect → Session pooler* (IPv4). Le tabelle le crea il servizio al primo avvio,
    con la Row Level Security attiva, quindi non sono leggibili dalle API pubbliche
    di Supabase.
-2. Sulla piattaforma crea un servizio da questo repository con `server/Dockerfile`
-   (contesto di build: la root del repository) e le variabili `BASE_URL`,
+2. Sulla piattaforma crea un servizio da questo repository con il `Dockerfile`
+   nella root e le variabili `BASE_URL`,
    `DATABASE_URL`, `ADMIN_USERNAME`, `ADMIN_PASSWORD`, `TRUST_PROXY=true`.
 3. Collega il tuo dominio (es. `q.tuodominio.it`) e usalo in `BASE_URL`.
 4. Se la piattaforma addormenta i servizi inattivi, un monitoraggio gratuito che
-   chiama `/healthz` ogni ora lo tiene sveglio. `/healthz` interroga anche il
+   chiama `/health` ogni ora lo tiene sveglio. `/health` interroga anche il
    database, quindi tiene attivo anche Supabase, che mette in pausa i progetti
    gratuiti dopo una settimana senza attività.
 
 **Server tuo con Docker** (SQLite su un volume):
 
 ```bash
-docker build -f server/Dockerfile -t qrserver .
+docker build -t qrserver .
 docker run -d --name qrserver -p 127.0.0.1:8080:8080 -v qrdata:/data \
   -e BASE_URL=https://q.esempio.it -e TRUST_PROXY=true \
   -e ADMIN_USERNAME=admin -e ADMIN_PASSWORD='…' qrserver
@@ -390,6 +390,7 @@ qrcode_generator/
 ├── install-launcher.sh   # Aggiunge l'app al menu applicazioni (Linux)
 ├── requirements.txt
 ├── Makefile              # make run/test/check: richiama server/
+├── Dockerfile            # Immagine del servizio (contesto: la root, serve anche docs/)
 ├── TODO.md               # Idee per il futuro
 ├── assets/
 │   ├── icon.png
@@ -405,7 +406,6 @@ qrcode_generator/
 │   └── vendor/qrcode.js  # qrcode-generator di Kazuhiko Arase (MIT)
 └── server/               # Servizio dei QR dinamici (Go)
     ├── main.go           # Avvio, primo amministratore, arresto pulito
-    ├── Dockerfile
     ├── .env.example
     ├── internal/
     │   ├── config/       # Lettura di .env e variabili d'ambiente
