@@ -1,2 +1,8 @@
 .venv/
 __pycache__/
+
+# Servizio QR dinamici
+server/build/
+server/data/
+server/.env
+server/web/public/

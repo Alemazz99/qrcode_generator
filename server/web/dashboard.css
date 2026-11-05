@@ -1,0 +1,641 @@
+/* Estende vendor/style.css (lo stesso stile della web app) con gli elementi della dashboard. */
+
+:root {
+  --ok: #067647;
+  --ok-bg: #ecfdf3;
+  --off-bg: #f2f4f7;
+  /* Colori dei due tipi di QR: blu = dinamico (passa dal servizio), ambra = statico */
+  --dynamic: #1a3d7c;
+  --dynamic-bg: #e8eef9;
+  --static: #8a4b00;
+  --static-bg: #fdf1e1;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --ok: #75e0a7;
+    --ok-bg: #0b2a1c;
+    --off-bg: #232831;
+    --dynamic: #9dbbf2;
+    --dynamic-bg: #17233a;
+    --static: #f5b65c;
+    --static-bg: #2e2312;
+  }
+}
+
+[hidden] {
+  display: none !important;
+}
+
+h2,
+h3,
+h4 {
+  margin: 0;
+  letter-spacing: -0.01em;
+}
+
+h2 {
+  font-size: 1.375rem;
+}
+
+h3 {
+  font-size: 1.0625rem;
+}
+
+h4 {
+  font-size: 0.8125rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--muted);
+  margin: 18px 0 8px;
+}
+
+input[type="password"],
+input[type="url"] {
+  width: 100%;
+  min-height: 44px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+}
+
+/* ---- Struttura ------------------------------------------------------------ */
+
+.topbar {
+  flex-wrap: wrap;
+}
+
+.nav {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: auto;
+  flex-wrap: wrap;
+}
+
+.nav a {
+  padding: 8px 10px;
+  border-radius: 8px;
+  color: var(--muted);
+  text-decoration: none;
+  font-size: 0.9375rem;
+  font-weight: 550;
+}
+
+.nav a:hover {
+  color: var(--text);
+}
+
+.nav a.current {
+  color: var(--text);
+  background: var(--surface);
+  box-shadow: var(--shadow);
+}
+
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  max-width: 1040px;
+  margin: 0 auto;
+  padding: 16px 16px 40px;
+}
+
+.page.narrow {
+  max-width: 440px;
+}
+
+.page-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.page-head select {
+  width: auto;
+}
+
+.layout.flush {
+  padding: 0;
+  max-width: none;
+  margin: 0;
+}
+
+.stack {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.back {
+  color: var(--muted);
+  text-decoration: none;
+  font-size: 0.9375rem;
+  width: fit-content;
+}
+
+.back:hover {
+  color: var(--text);
+}
+
+.center {
+  text-align: center;
+}
+
+.form-error {
+  margin: 0;
+  color: var(--error);
+  font-size: 0.9375rem;
+}
+
+/* ---- Elenco QR ------------------------------------------------------------ */
+
+.qr-list {
+  display: grid;
+  gap: 12px;
+}
+
+@media (min-width: 720px) {
+  .qr-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.qr-item {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 14px 16px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  box-shadow: var(--shadow);
+  color: inherit;
+  text-decoration: none;
+  min-width: 0;
+}
+
+.qr-item.dynamic {
+  --kind: var(--dynamic);
+}
+
+.qr-item.static {
+  --kind: var(--static);
+}
+
+/* Striscia colorata a sinistra: il tipo si riconosce a colpo d'occhio */
+.qr-item {
+  border-left: 5px solid var(--kind, var(--border));
+}
+
+.qr-item:hover {
+  border-color: var(--kind, var(--accent));
+}
+
+.qr-item-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.qr-item strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.qr-item .target,
+.qr-item code {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.875rem;
+}
+
+.qr-item .target {
+  color: var(--muted);
+}
+
+.qr-item .counts {
+  font-size: 0.875rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.empty {
+  padding: 32px 16px;
+  text-align: center;
+  color: var(--muted);
+  border: 1px dashed var(--border);
+  border-radius: var(--radius);
+}
+
+code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+.badge {
+  flex: none;
+  padding: 2px 10px;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  background: var(--ok-bg);
+  color: var(--ok);
+}
+
+.badge.off {
+  background: var(--off-bg);
+  color: var(--muted);
+}
+
+.badge.kind.dynamic {
+  background: var(--dynamic-bg);
+  color: var(--dynamic);
+}
+
+.badge.kind.static {
+  background: var(--static-bg);
+  color: var(--static);
+}
+
+.dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  margin-right: 6px;
+  border-radius: 50%;
+}
+
+.dot.dynamic {
+  background: var(--dynamic);
+}
+
+.dot.static {
+  background: var(--static);
+}
+
+/* ---- Filtro per tipo ---------------------------------------------------------- */
+
+.segmented {
+  display: flex;
+  gap: 4px;
+  padding: 4px;
+  width: fit-content;
+  max-width: 100%;
+  overflow-x: auto;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+}
+
+.segmented button {
+  display: inline-flex;
+  align-items: center;
+  min-height: 36px;
+  padding: 6px 12px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  font-size: 0.9375rem;
+  font-weight: 550;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.segmented button span {
+  margin-left: 6px;
+  font-variant-numeric: tabular-nums;
+  opacity: 0.8;
+}
+
+.segmented button[aria-selected="true"] {
+  background: var(--bg);
+  color: var(--text);
+  box-shadow: var(--shadow);
+}
+
+.segmented button:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 1px;
+}
+
+/* ---- Accesso libero ai QR statici dalla pagina di login ----------------------- */
+
+.public-link {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  color: inherit;
+  text-decoration: none;
+  border-left: 5px solid var(--static);
+}
+
+.public-link:hover {
+  border-color: var(--static);
+}
+
+.public-link .muted {
+  font-size: 0.875rem;
+}
+
+.public-link-cta {
+  margin-top: 4px;
+  color: var(--static);
+  font-weight: 600;
+}
+
+.badges {
+  display: flex;
+  gap: 6px;
+}
+
+.qr-item .badges {
+  flex: none;
+}
+
+/* ---- Scelta dinamico/statico ------------------------------------------------- */
+
+.kind-choice {
+  display: grid;
+  gap: 8px;
+}
+
+@media (min-width: 560px) {
+  .kind-choice {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.kind-option {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+.kind-option:has(input:checked) {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px var(--accent);
+}
+
+.kind-option input {
+  flex: none;
+  width: 18px;
+  height: 18px;
+  margin: 2px 0 0;
+  accent-color: var(--accent);
+}
+
+.kind-option > span {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.kind-option .muted {
+  font-size: 0.8125rem;
+}
+
+/* ---- Dettaglio ------------------------------------------------------------ */
+
+.shortlink {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 6px 6px 12px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface);
+  min-width: 0;
+}
+
+.shortlink code {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.savebar {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.savebar #dirty {
+  margin-right: auto;
+  font-size: 0.875rem;
+}
+
+.btn.danger {
+  color: var(--error);
+}
+
+.btn.danger-solid {
+  background: var(--error);
+  border-color: var(--error);
+  color: #fff;
+}
+
+.confirm p {
+  margin: 0 0 12px;
+}
+
+/* ---- Statistiche ---------------------------------------------------------- */
+
+.stats {
+  padding: 16px;
+}
+
+.kpis {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin: 14px 0;
+}
+
+@media (min-width: 720px) {
+  .kpis {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+.kpis > div {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: var(--bg);
+}
+
+.kpi-label {
+  font-size: 0.8125rem;
+  color: var(--muted);
+}
+
+.kpis strong {
+  font-size: 1.25rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.chart svg {
+  display: block;
+  width: 100%;
+  height: 180px;
+  overflow: visible;
+}
+
+.chart .bar {
+  fill: var(--accent);
+}
+
+.chart .bar:hover {
+  fill: var(--accent-hover);
+}
+
+.chart .axis {
+  stroke: var(--border);
+}
+
+.chart-ticks {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 6px;
+  font-size: 0.75rem;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.breakdowns {
+  display: grid;
+  gap: 0 24px;
+}
+
+@media (min-width: 720px) {
+  .breakdowns {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+.bd-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 2px 8px;
+  font-size: 0.875rem;
+  margin-bottom: 8px;
+}
+
+.bd-track {
+  grid-column: 1 / -1;
+  height: 6px;
+  border-radius: 3px;
+  background: var(--bg);
+  overflow: hidden;
+}
+
+.bd-fill {
+  height: 100%;
+  border-radius: 3px;
+  background: var(--accent);
+}
+
+.bd-row span:last-of-type {
+  font-variant-numeric: tabular-nums;
+  color: var(--muted);
+}
+
+.history {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 0.875rem;
+}
+
+.history li {
+  padding: 8px 0;
+  border-top: 1px solid var(--border);
+  overflow-wrap: anywhere;
+}
+
+.history time {
+  color: var(--muted);
+}
+
+/* ---- Utenti --------------------------------------------------------------- */
+
+.table-wrap {
+  overflow-x: auto;
+  padding: 0;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9375rem;
+}
+
+th,
+td {
+  padding: 10px 14px;
+  text-align: left;
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+}
+
+th {
+  font-size: 0.8125rem;
+  color: var(--muted);
+  font-weight: 600;
+}
+
+tr:last-child td {
+  border-bottom: none;
+}
+
+td.actions-cell {
+  display: flex;
+  gap: 6px;
+  justify-content: flex-end;
+}
+
+/* ---- Vista amministratore ------------------------------------------------------ */
+
+.qr-item .owner {
+  font-size: 0.8125rem;
+  color: var(--muted);
+}
+
+.qr-item .owner strong {
+  color: var(--text);
+  font-weight: 600;
+}
+
+.readonly-note {
+  margin: 0;
+  padding: 10px 14px;
+  border-radius: 10px;
+  background: var(--off-bg);
+  font-size: 0.9375rem;
+}
+
+/* QR di un altro utente: niente controlli per cambiare il logo */
+.controls.readonly .logo-file label.btn,
+.controls.readonly .logo-file button {
+  display: none;
+}

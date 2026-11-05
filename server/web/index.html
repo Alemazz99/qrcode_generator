@@ -1,0 +1,325 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="robots" content="noindex">
+  <title>QR dinamici</title>
+  <meta name="theme-color" content="#f6f7f9" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#0f1115" media="(prefers-color-scheme: dark)">
+  <link rel="icon" href="/crea/icons/icon-192.png" type="image/png">
+  <link rel="stylesheet" href="/crea/style.css">
+  <link rel="stylesheet" href="dashboard.css">
+  <script src="/crea/vendor/qrcode.js" defer></script>
+  <script src="/crea/qr-render.js" defer></script>
+  <script src="dashboard.js" defer></script>
+</head>
+<body>
+  <header class="topbar">
+    <img src="/crea/icons/icon-192.png" alt="" width="32" height="32">
+    <h1>QR dinamici</h1>
+    <nav id="nav" class="nav" hidden>
+      <a href="#/" data-nav="list">I miei QR</a>
+      <a href="#/all" data-nav="all" id="nav-all" hidden>Tutti i QR</a>
+      <a href="#/users" data-nav="users" id="nav-users" hidden>Utenti</a>
+      <a href="#/account" data-nav="account">Account</a>
+      <button id="logout" class="btn small ghost" type="button">Esci</button>
+    </nav>
+  </header>
+
+  <!-- Login -->
+  <main id="view-login" class="page narrow" hidden>
+    <form id="login-form" class="card stack">
+      <h2>Accedi</h2>
+      <div class="field">
+        <label for="login-username">Nome utente</label>
+        <input id="login-username" type="text" autocomplete="username" autocapitalize="off" spellcheck="false" required>
+      </div>
+      <div class="field">
+        <label for="login-password">Password</label>
+        <input id="login-password" type="password" autocomplete="current-password" required>
+      </div>
+      <p id="login-error" class="form-error" hidden></p>
+      <button class="btn primary" type="submit">Accedi</button>
+    </form>
+    <a class="card public-link" href="/crea/">
+      <strong>Ti serve solo un QR statico?</strong>
+      <span class="muted">Crealo senza accedere: il link resta scritto nel QR, niente statistiche e niente salvataggio sul server.</span>
+      <span class="public-link-cta">Crea un QR statico →</span>
+    </a>
+    <p class="note center">Con l'accesso puoi creare QR dinamici, con statistiche e destinazione modificabile.</p>
+  </main>
+
+  <!-- Elenco QR -->
+  <main id="view-list" class="page" hidden>
+    <div class="page-head">
+      <h2 id="list-title">I miei QR</h2>
+      <select id="owner-filter" aria-label="Filtra per utente" hidden></select>
+      <button id="new-toggle" class="btn primary small" type="button">Nuovo QR</button>
+    </div>
+    <p id="all-note" class="note" hidden>Vista amministratore: vedi i QR e le statistiche di tutti gli utenti. Quelli degli altri sono in sola lettura.</p>
+
+    <form id="new-form" class="card stack" hidden>
+      <h3>Nuovo QR</h3>
+      <div class="kind-choice" role="radiogroup" aria-label="Tipo di QR">
+        <label class="kind-option">
+          <input type="radio" name="new-kind" value="dynamic" checked>
+          <span><strong>Dinamico</strong>
+            <span class="muted">Link corto che passa dal servizio: statistiche delle scansioni e destinazione modificabile senza ristampare.</span></span>
+        </label>
+        <label class="kind-option">
+          <input type="radio" name="new-kind" value="static">
+          <span><strong>Statico</strong>
+            <span class="muted">Il link (o il testo) è scritto nel QR: funziona sempre, anche a servizio spento, ma senza statistiche.</span></span>
+        </label>
+      </div>
+      <div class="field">
+        <label for="new-name">Nome (solo per te)</label>
+        <input id="new-name" type="text" maxlength="100" placeholder="Volantino evento" autocomplete="off">
+      </div>
+      <div class="field">
+        <label for="new-target" id="new-target-label">Link di destinazione</label>
+        <input id="new-target" type="url" inputmode="url" placeholder="https://esempio.it" required
+               autocomplete="off" autocapitalize="off" spellcheck="false">
+      </div>
+      <p id="new-note" class="note">Il QR conterrà un link corto fisso: potrai cambiare la destinazione quando vuoi senza ristamparlo.</p>
+      <p id="new-error" class="form-error" hidden></p>
+      <div class="actions">
+        <button id="new-cancel" class="btn" type="button">Annulla</button>
+        <button class="btn primary" type="submit">Crea</button>
+      </div>
+    </form>
+
+    <div id="kind-filter" class="segmented" role="tablist" aria-label="Filtra per tipo" hidden>
+      <button type="button" role="tab" data-kind="all">Tutti <span></span></button>
+      <button type="button" role="tab" data-kind="dynamic"><i class="dot dynamic"></i>Dinamici <span></span></button>
+      <button type="button" role="tab" data-kind="static"><i class="dot static"></i>Statici <span></span></button>
+    </div>
+
+    <div id="qr-list" class="qr-list"></div>
+  </main>
+
+  <!-- Dettaglio QR -->
+  <main id="view-qr" class="page" hidden>
+    <a href="#/" id="qr-back" class="back">← I miei QR</a>
+    <div class="page-head">
+      <h2 id="qr-title"></h2>
+      <span class="badges">
+        <span id="qr-kind" class="badge kind"></span>
+        <span id="qr-badge" class="badge off" hidden>Disattivato</span>
+      </span>
+    </div>
+    <p id="readonly-note" class="readonly-note" hidden></p>
+
+    <div class="layout flush">
+      <section class="output" aria-label="Anteprima">
+        <div id="qr-shortlink" class="shortlink">
+          <code id="qr-short"></code>
+          <button id="qr-copy" class="btn small" type="button">Copia</button>
+        </div>
+        <div id="preview" class="preview"></div>
+        <p id="info" class="info"></p>
+        <div class="actions">
+          <button id="download" class="btn primary" type="button" disabled>Scarica PNG</button>
+        </div>
+        <p id="preview-note" class="note center"></p>
+      </section>
+
+      <section class="controls" aria-label="Impostazioni">
+        <fieldset class="card">
+          <legend id="target-legend">Destinazione</legend>
+          <div class="row">
+            <label for="qr-name">Nome</label>
+            <input id="qr-name" type="text" maxlength="100" autocomplete="off">
+          </div>
+          <div class="row">
+            <label for="qr-target" id="qr-target-label">Link</label>
+            <input id="qr-target" type="url" inputmode="url" autocomplete="off" autocapitalize="off" spellcheck="false">
+          </div>
+          <div class="row" id="qr-active-row">
+            <span></span>
+            <label class="check"><input id="qr-active" type="checkbox"> QR attivo</label>
+          </div>
+        </fieldset>
+
+        <fieldset class="card">
+          <legend>Aspetto</legend>
+          <div class="row">
+            <label for="fg">Colore QR</label>
+            <div class="color">
+              <input id="fg" type="color" aria-label="Colore QR">
+              <input id="fg-hex" type="text" maxlength="7" spellcheck="false" aria-label="Colore QR esadecimale">
+            </div>
+          </div>
+          <div class="row">
+            <label for="bg">Sfondo</label>
+            <div class="color">
+              <input id="bg" type="color" aria-label="Colore sfondo">
+              <input id="bg-hex" type="text" maxlength="7" spellcheck="false" aria-label="Colore sfondo esadecimale">
+            </div>
+          </div>
+          <div class="row">
+            <span></span>
+            <label class="check"><input id="transparent" type="checkbox"> Sfondo trasparente</label>
+          </div>
+          <div class="row">
+            <label for="module-style">Stile moduli</label>
+            <select id="module-style"></select>
+          </div>
+          <div class="row">
+            <label for="eye-style">Stile angoli</label>
+            <select id="eye-style"></select>
+          </div>
+        </fieldset>
+
+        <fieldset class="card">
+          <legend>Logo centrale</legend>
+          <div class="row">
+            <span class="label">File</span>
+            <div class="logo-file">
+              <span id="logo-name" class="muted">Nessun logo</span>
+              <label class="btn small" for="logo-input">Scegli…</label>
+              <input id="logo-input" type="file" accept="image/*" hidden>
+              <button id="logo-clear" class="btn small" type="button" disabled>Rimuovi</button>
+            </div>
+          </div>
+          <div class="row">
+            <label for="logo-ratio">Dimensione</label>
+            <div class="range">
+              <input id="logo-ratio" type="range" min="10" step="1">
+              <output id="logo-ratio-value" for="logo-ratio"></output>
+            </div>
+          </div>
+          <div class="row">
+            <span></span>
+            <label class="check"><input id="logo-padding" type="checkbox"> Riquadro di sfondo dietro al logo</label>
+          </div>
+        </fieldset>
+
+        <fieldset class="card">
+          <legend>Dimensioni e qualità</legend>
+          <div class="row">
+            <label for="box-size">Dimensione modulo</label>
+            <div class="range">
+              <input id="box-size" type="range" min="4" max="80" step="1">
+              <output id="box-size-value" for="box-size"></output>
+            </div>
+          </div>
+          <div class="row">
+            <label for="border">Margine</label>
+            <div class="range">
+              <input id="border" type="range" min="0" max="10" step="1">
+              <output id="border-value" for="border"></output>
+            </div>
+          </div>
+          <div class="row">
+            <label for="error-level">Correzione errori</label>
+            <select id="error-level"></select>
+          </div>
+          <p id="error-note" class="note" hidden>Con il logo viene usato H - 30%</p>
+        </fieldset>
+
+        <div class="savebar">
+          <span id="dirty" class="muted" hidden>Modifiche non salvate</span>
+          <button id="qr-delete" class="btn ghost danger" type="button">Elimina</button>
+          <button id="qr-save" class="btn primary" type="button" disabled>Salva</button>
+        </div>
+        <div id="delete-confirm" class="card confirm" hidden>
+          <p id="delete-text"></p>
+          <div class="actions">
+            <button id="delete-cancel" class="btn" type="button">Annulla</button>
+            <button id="delete-ok" class="btn danger-solid" type="button">Elimina definitivamente</button>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <section id="stats-section" class="card stats" aria-label="Statistiche">
+      <div class="page-head">
+        <h3>Scansioni</h3>
+        <select id="stats-days" aria-label="Periodo">
+          <option value="7">Ultimi 7 giorni</option>
+          <option value="30" selected>Ultimi 30 giorni</option>
+          <option value="90">Ultimi 90 giorni</option>
+          <option value="365">Ultimo anno</option>
+        </select>
+      </div>
+      <div class="kpis">
+        <div><span class="kpi-label">Totale</span><strong id="kpi-total">–</strong></div>
+        <div><span class="kpi-label">Nel periodo</span><strong id="kpi-period">–</strong></div>
+        <div><span class="kpi-label">Ultima scansione</span><strong id="kpi-last">–</strong></div>
+        <div><span class="kpi-label">Anteprime/bot ignorati</span><strong id="kpi-bots">–</strong></div>
+      </div>
+      <div id="chart" class="chart"></div>
+      <div class="breakdowns">
+        <div><h4>Dispositivo</h4><div id="bd-devices"></div></div>
+        <div><h4>Sistema</h4><div id="bd-os"></div></div>
+        <div><h4>Browser</h4><div id="bd-browsers"></div></div>
+      </div>
+      <h4>Storico destinazioni</h4>
+      <ul id="history" class="history"></ul>
+    </section>
+  </main>
+
+  <!-- Utenti (admin) -->
+  <main id="view-users" class="page" hidden>
+    <div class="page-head"><h2>Utenti</h2></div>
+    <div id="users-list" class="card table-wrap"></div>
+
+    <form id="reset-form" class="card stack" hidden>
+      <h3 id="reset-title"></h3>
+      <div class="field">
+        <label for="reset-password">Nuova password</label>
+        <input id="reset-password" type="password" autocomplete="new-password" minlength="8" required>
+      </div>
+      <p class="note">Le sessioni aperte dell'utente verranno chiuse.</p>
+      <p id="reset-error" class="form-error" hidden></p>
+      <div class="actions">
+        <button id="reset-cancel" class="btn" type="button">Annulla</button>
+        <button class="btn primary" type="submit">Imposta password</button>
+      </div>
+    </form>
+
+    <form id="user-form" class="card stack">
+      <h3>Nuovo utente</h3>
+      <div class="field">
+        <label for="user-username">Nome utente</label>
+        <input id="user-username" type="text" autocomplete="off" autocapitalize="off" spellcheck="false" required>
+      </div>
+      <div class="field">
+        <label for="user-password">Password iniziale</label>
+        <input id="user-password" type="password" autocomplete="new-password" minlength="8" required>
+      </div>
+      <label class="check"><input id="user-admin" type="checkbox"> Amministratore (può gestire gli utenti)</label>
+      <p id="user-error" class="form-error" hidden></p>
+      <button class="btn primary" type="submit">Crea utente</button>
+    </form>
+  </main>
+
+  <!-- Account -->
+  <main id="view-account" class="page narrow" hidden>
+    <div class="page-head"><h2>Account</h2></div>
+    <form id="password-form" class="card stack">
+      <p>Accesso come <strong id="account-name"></strong></p>
+      <h3>Cambia password</h3>
+      <div class="field">
+        <label for="pw-current">Password attuale</label>
+        <input id="pw-current" type="password" autocomplete="current-password" required>
+      </div>
+      <div class="field">
+        <label for="pw-new">Nuova password</label>
+        <input id="pw-new" type="password" autocomplete="new-password" minlength="8" required>
+      </div>
+      <div class="field">
+        <label for="pw-confirm">Ripeti la nuova password</label>
+        <input id="pw-confirm" type="password" autocomplete="new-password" minlength="8" required>
+      </div>
+      <p class="note">Le sessioni aperte sugli altri dispositivi verranno chiuse.</p>
+      <p id="pw-error" class="form-error" hidden></p>
+      <button class="btn primary" type="submit">Cambia password</button>
+    </form>
+  </main>
+
+  <div id="status" class="toast" role="status" aria-live="polite"></div>
+</body>
+</html>

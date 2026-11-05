@@ -1,0 +1,7 @@
+*
+!server/
+!docs/
+server/build/
+server/data/
+server/.env
+server/web/public/
